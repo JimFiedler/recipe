@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Recipe Finder</title>
+    <link rel="stylesheet" type="text/css" href="styles.css"/>
+</head>
+<body>
+
+      <nav class="navbar">
+        <input type="text" class="ingredient-input" placeholder="Enter an ingredient. ">
+        <input type="button" class="get-data-button" value="Get Recipe via Ingredient">
+        <input type="button" class="new-recipe-button" value="Create A New Recipe">
+<!--
+        <div class="user-email"></div>
+-->
+        <input type="button" class="modal-button" value="Login/Sign Up">
+
+      </nav>
+
+      <div class="container">
+
+      <nav>
+          <ul class="recipes">
+            <!-- Put recipe data here. -->
+          </ul>
+      </nav>
+
+
+      <div id="myModal" class="modal">
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <div>
+          <div>Login</div>
+          <input type="text" class="email-input" placeholder="email">
+          <input type="text" class="password-input" placeholder="password">
+          <input type="button" class="login-button" value="Login">
+        </div>
+
+          <div>
+            <div>Sign Up</div>
+          <input type="text" class="sign-up-name-input" placeholder="name">
+          <input type="text" class="sign-up-email-input" placeholder="email">
+          <input type="text" class="sign-up-password-input" placeholder="password">
+          <input type="button" class="sign-up-button" value="SignUp">
+
+          </div>
+
+        </div>
+      </div>
+
+      <div class="detail">
+
+        <div class="recipe-detail">
+          <!-- put details here. -->
+          <div class="title">
+
+          <!--  <input type="text" class="recipe-title" placeholder="Enter a Title. "> -->
+
+          </div>
+          <div class="image">
+          <img id="recipe-image">
+          </div>
+          <div class="instructions">
+
+            <!--<input type="text" class="recipe-instructions" placeholder="Enter Your Instructions. ">-->
+            <p class="instructions-text">
+            </p>
+
+          </div>
+
+          <h3 class="ingredient-heading">Ingredients:</h3>
+          <ul class="ingredients">
+            <!--<input type="text" class="recipe-ingredients" placeholder="Enter an Ingredient. ">-->
+            <!--<input type="button" class="add-ingredient-button" value="Add Ingredient">-->
+          </ul>
+
+          <div class="detail-button">
+        <!--  <input type="button" class="save-recipe-button" value="Save This Recipe">
+          <input type="button" class="remove-recipe-button" value="Remove This Recipe From Your List">-->
+          </div>
+      </div>
+    </div>
+
+    <nav>
+      <ul class="saved-recipes">
+
+
+      </ul>
+    </nav>
+
+  </div>
+
+    <footer class="footer">
+    </footer>
+
+    <script src="js/app.bundle.js"></script>
+</body>
+</html>
