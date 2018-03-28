@@ -45,7 +45,11 @@ $(document).ready(function() {
 	var provider = new firebase.auth.GoogleAuthProvider();
 	const db = firebase.database();
 	var ref = db.ref("recipeList");
+  var usersRef = db.ref("users");
+
+  //do I need this?
   var rootRef = firebase.database().ref().child("recipeList");
+
   var currentRecipeKey;
 
   const txtEmail = document.getElementById('email-input');
@@ -74,6 +78,7 @@ $(document).ready(function() {
     init: function() {
       App.bindEvents();
       App.populateSavedRecipeList();
+      App.loginState();
       //App.userDisplay();
     },
 
@@ -81,33 +86,30 @@ $(document).ready(function() {
       $(".get-data-button").on("click", App.getRecipeViaIngredient);
       $(document).on("click", ".recipes > li", App.showRecipeDetails);
       $(document).on("click", ".saved-recipes > li", App.showSavedRecipeDetails);
-
       $(document).on("click", "input.save-recipe-button", App.saveRecipeToList);
-
       $(document).on("click", "input.remove-recipe-button", App.removeRecipeFromList);
-
       $(".login-button").on("click", App.logIn);
       $(".sign-up-button").on("click", App.signUp);
       $(".new-recipe-button").on("click", App.toggleToForm);
-
       $(document).on("click", "input.add-ingredient-button", App.addIngredient);
-
       $(".modal-button").on("click", App.logInModalOpen);
       $(".close").on("click", App.logInModalClose);
-
-
-
+      $(".sign-out-button").on("click", App.signOut);
     },
 
-    userDisplay: function() {
+    //fix this
 
-      var currentUser = firebase.auth().currentUser;
-      var currentUserEmail = currentUser.email;
-      $(".user-email").text(currentUserEmail);
+    // userDisplay: function() {
+    //
+    //   var currentUser = firebase.auth().currentUser;
+    //   var currentUserEmail = currentUser.email;
+    //   $(".user-email").text(currentUserEmail);
+    //
+    // //  console.log(currentUserEmail);
+    //
+    // },
 
-    //  console.log(currentUserEmail);
 
-    },
 
     logInModalOpen: function() {
 
@@ -136,13 +138,47 @@ $(document).ready(function() {
       firebase.auth().onAuthStateChanged(function(user) {
         if (user) {
           App.populateSavedRecipeList();
-          //take out
-          //console.log(user);
-          //take out
+          App.logInModalClose();
+          //App.signOutButton();
         } else {
           //no user is signed in
         }
       });
+      },
+
+      signOut: function() {
+
+        var user = firebase.auth().currentUser;
+
+        console.log(user);
+
+        firebase.auth().signOut().then(function() {
+
+
+          window.location.reload(true);
+
+          }, function(error) {
+          console.error('Sign Out Error', error);
+          });
+
+          console.log(user);
+      },
+
+      loginState: function() {
+
+        firebase.auth().onAuthStateChanged(function(user) {
+
+          var modalButton = $(".modal-button");
+          var signOutButton = $(".sign-out-button");
+
+          if (user) {
+            signOutButton.show();
+            modalButton.hide();
+          } else {
+            signOutButton.hide();
+            modalButton.show();
+          }
+        });
       },
 
 
@@ -154,9 +190,18 @@ $(document).ready(function() {
       var userName = $(".sign-up-name-input").val();
       var email = $(".sign-up-email-input").val();
       var password = $(".sign-up-password-input").val();
+
+      var userData = {
+        userName: userName,
+        email: email,
+        password: password
+      };
+
       const auth = firebase.auth();
       const promise = auth.createUserWithEmailAndPassword(email, password);
       promise.catch(e => console.log(e.message));
+
+      usersRef.push(userData);
 
       firebase.auth().onAuthStateChanged(function(user) {
 
@@ -474,7 +519,7 @@ console.log($(".instructions").val());
 
     renderList: function(returnArr) {
 
-      App.userDisplay();
+      //App.userDisplay();
 
     $(".saved-recipes li").remove();
         var savedRecipes = returnArr;

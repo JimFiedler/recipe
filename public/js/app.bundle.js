@@ -14183,7 +14183,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
   var provider = new _firebase2.default.auth.GoogleAuthProvider();
   var db = _firebase2.default.database();
   var ref = db.ref("recipeList");
+  var usersRef = db.ref("users");
+
+  //do I need this?
   var rootRef = _firebase2.default.database().ref().child("recipeList");
+
   var currentRecipeKey;
 
   var txtEmail = document.getElementById('email-input');
@@ -14211,6 +14215,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
     init: function init() {
       App.bindEvents();
       App.populateSavedRecipeList();
+      App.loginState();
       //App.userDisplay();
     },
 
@@ -14218,29 +14223,29 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
       (0, _jquery2.default)(".get-data-button").on("click", App.getRecipeViaIngredient);
       (0, _jquery2.default)(document).on("click", ".recipes > li", App.showRecipeDetails);
       (0, _jquery2.default)(document).on("click", ".saved-recipes > li", App.showSavedRecipeDetails);
-
       (0, _jquery2.default)(document).on("click", "input.save-recipe-button", App.saveRecipeToList);
-
       (0, _jquery2.default)(document).on("click", "input.remove-recipe-button", App.removeRecipeFromList);
-
       (0, _jquery2.default)(".login-button").on("click", App.logIn);
       (0, _jquery2.default)(".sign-up-button").on("click", App.signUp);
       (0, _jquery2.default)(".new-recipe-button").on("click", App.toggleToForm);
-
       (0, _jquery2.default)(document).on("click", "input.add-ingredient-button", App.addIngredient);
-
       (0, _jquery2.default)(".modal-button").on("click", App.logInModalOpen);
       (0, _jquery2.default)(".close").on("click", App.logInModalClose);
+      (0, _jquery2.default)(".sign-out-button").on("click", App.signOut);
     },
 
-    userDisplay: function userDisplay() {
+    //fix this
 
-      var currentUser = _firebase2.default.auth().currentUser;
-      var currentUserEmail = currentUser.email;
-      (0, _jquery2.default)(".user-email").text(currentUserEmail);
+    // userDisplay: function() {
+    //
+    //   var currentUser = firebase.auth().currentUser;
+    //   var currentUserEmail = currentUser.email;
+    //   $(".user-email").text(currentUserEmail);
+    //
+    // //  console.log(currentUserEmail);
+    //
+    // },
 
-      //  console.log(currentUserEmail);
-    },
 
     logInModalOpen: function logInModalOpen() {
 
@@ -14269,12 +14274,44 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
       _firebase2.default.auth().onAuthStateChanged(function (user) {
         if (user) {
           App.populateSavedRecipeList();
-          //take out
-          //console.log(user);
-          //take out
+          App.logInModalClose();
+          //App.signOutButton();
         } else {
             //no user is signed in
           }
+      });
+    },
+
+    signOut: function signOut() {
+
+      var user = _firebase2.default.auth().currentUser;
+
+      console.log(user);
+
+      _firebase2.default.auth().signOut().then(function () {
+
+        window.location.reload(true);
+      }, function (error) {
+        console.error('Sign Out Error', error);
+      });
+
+      console.log(user);
+    },
+
+    loginState: function loginState() {
+
+      _firebase2.default.auth().onAuthStateChanged(function (user) {
+
+        var modalButton = (0, _jquery2.default)(".modal-button");
+        var signOutButton = (0, _jquery2.default)(".sign-out-button");
+
+        if (user) {
+          signOutButton.show();
+          modalButton.hide();
+        } else {
+          signOutButton.hide();
+          modalButton.show();
+        }
       });
     },
 
@@ -14285,11 +14322,20 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
       var userName = (0, _jquery2.default)(".sign-up-name-input").val();
       var email = (0, _jquery2.default)(".sign-up-email-input").val();
       var password = (0, _jquery2.default)(".sign-up-password-input").val();
+
+      var userData = {
+        userName: userName,
+        email: email,
+        password: password
+      };
+
       var auth = _firebase2.default.auth();
       var promise = auth.createUserWithEmailAndPassword(email, password);
       promise.catch(function (e) {
         return console.log(e.message);
       });
+
+      usersRef.push(userData);
 
       _firebase2.default.auth().onAuthStateChanged(function (user) {
 
@@ -14580,7 +14626,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
     renderList: function renderList(returnArr) {
 
-      App.userDisplay();
+      //App.userDisplay();
 
       (0, _jquery2.default)(".saved-recipes li").remove();
       var savedRecipes = returnArr;
