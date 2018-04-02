@@ -1,11 +1,7 @@
 import $ from 'jquery';
 import _ from 'lodash';
-
-//firebase//
-
 import firebase from 'firebase';
 
-//firebase//
 
 $(document).ready(function() {
 
@@ -13,7 +9,7 @@ $(document).ready(function() {
   const APP_KEY = "9d31b419ea348af62637409eebc94396";
   const BASE_URL = "https://api.edamam.com/search";
 
-  //firebase//
+  //firebase config
 
   var config = {
     apiKey: "AIzaSyACOWcZ9ZBeM0CQEcNfISmxXt0VWPqAh6A",
@@ -24,9 +20,10 @@ $(document).ready(function() {
     messagingSenderId: "1036098729656"
   };
 
-  //firebase
-
   firebase.initializeApp(config);
+
+  //firebase user attributes
+
   firebase.auth().onAuthStateChanged(function(user) {
     if (user) {
       var displayName = user.displayName;
@@ -35,7 +32,6 @@ $(document).ready(function() {
       var photoURL = user.photoURL;
       var isAnonymous = user.isAnonymous;
       var providerData = user.providerData;
-      //console.log(email);
     } else {
       //no user is signed in
     }
@@ -44,31 +40,22 @@ $(document).ready(function() {
   var firebaseAuth = firebase.auth();
 	var provider = new firebase.auth.GoogleAuthProvider();
 	const db = firebase.database();
-	var ref = db.ref("recipeList");
+	var recipeListRef = db.ref("recipeList");
   var usersRef = db.ref("users");
-
-  //do I need this?
-  var rootRef = firebase.database().ref().child("recipeList");
+  var userIngredientsRef = db.ref("userIngredients");
 
   var currentRecipeKey;
-
-  const txtEmail = document.getElementById('email-input');
-  const txtPassword = document.getElementById('password-input');
-  const btnLogin = document.getElementById('login-button');
-
   var userId;
 
 
   firebase.auth().onAuthStateChanged(function(user) {
     if (user) {
       userId = user.uid;
+      App.userDisplay();
     } else {
       //no user is signed in
     }
   });
-
-  //firebase
-
 
   let App = {
 
@@ -79,7 +66,6 @@ $(document).ready(function() {
       App.bindEvents();
       App.populateSavedRecipeList();
       App.loginState();
-      //App.userDisplay();
     },
 
     bindEvents: function() {
@@ -99,15 +85,15 @@ $(document).ready(function() {
 
     //fix this
 
-    // userDisplay: function() {
-    //
-    //   var currentUser = firebase.auth().currentUser;
-    //   var currentUserEmail = currentUser.email;
-    //   $(".user-email").text(currentUserEmail);
-    //
-    // //  console.log(currentUserEmail);
-    //
-    // },
+    userDisplay: function() {
+
+      var currentUser = firebase.auth().currentUser;
+      var currentUserEmail = currentUser.email;
+      //$(".user-email").text(currentUserEmail);
+
+      console.log(currentUserEmail);
+
+    },
 
 
 
@@ -134,14 +120,17 @@ $(document).ready(function() {
       promise.catch(e => console.log(e.message));
 
       var user = firebase.auth().currentUser;
-
+          console.log("outside");
       firebase.auth().onAuthStateChanged(function(user) {
         if (user) {
+          console.log("inside");
           App.populateSavedRecipeList();
           App.logInModalClose();
           //App.signOutButton();
         } else {
           //no user is signed in
+          //App.populateSavedRecipeList();
+          //App.toggleToForm();
         }
       });
       },
@@ -367,7 +356,9 @@ $(document).ready(function() {
 
       //firebase
 
-      firebase.database().ref('/recipeList').on('value', function(snapshot) {
+      //firebase.database().ref('/recipeList').on('value', function(snapshot) {
+
+        recipeListRef.on('value', function(snapshot) {
 
         var returnArr = [];
 
@@ -420,15 +411,10 @@ $(document).ready(function() {
 
     saveRecipeToList: function() {
 
-console.log($(".instructions").val());
-
-
       const recipe_name = $(".title p").text();
       const recipe = _.find(App.recipeArray, {
         title: recipe_name
       });
-
-      //console.log(recipe);
 
       if (typeof recipe === 'undefined'){
 
@@ -452,8 +438,18 @@ console.log($(".instructions").val());
           userWhoSaved: userId
         }
 
-         var newRef = ref.push(data);
-         var newID = newRef.key;
+         var newRef = recipeListRef.push(data);
+         const newID = newRef.key;
+
+      ingredientsArr.forEach(function(x){
+        var referencedIngredient = {
+          ingredient: x,
+          recipeID: newID
+        };
+
+       var newIngredientRef = userIngredientsRef.push(referencedIngredient);
+
+     });
 
       } else {
 
@@ -472,7 +468,7 @@ console.log($(".instructions").val());
         userWhoSaved: userId
       }
 
-        var newRef = ref.push(data);
+        var newRef = recipeListRef.push(data);
         var newID = newRef.key;
 
       //firebase//
@@ -481,18 +477,14 @@ console.log($(".instructions").val());
 
      removeRecipeFromList: function() {
 
-       const recipe_name = $(".title p").text();
-
-      var currentRecipe = ref.child(currentRecipeKey);
-
-      currentRecipe.remove();
-
-      App.toggleToForm();
+       userIngredientsRef.on('value', function(snapshot) {
+         App.snapshotToArrayIngredients(snapshot);
+       });
     },
 
     populateSavedRecipeList: function() {
 
-      firebase.database().ref('/recipeList').on('value', function(snapshot) {
+      recipeListRef.on('value', function(snapshot) {
         App.snapshotToArray(snapshot);
       });
     },
@@ -505,8 +497,6 @@ console.log($(".instructions").val());
       var item = childSnapshot.val();
       item.key = childSnapshot.key;
 
-      //console.log(item.userWhoSaved);
-
       if (item.userWhoSaved === userId) {
       returnArr.push(item)};
 
@@ -517,9 +507,34 @@ console.log($(".instructions").val());
 
     },
 
-    renderList: function(returnArr) {
+    //fix dis
 
-      //App.userDisplay();
+    snapshotToArrayIngredients: function(snapshot) {
+
+      const recipe_name = $(".title p").text();
+      const currentRecipe = recipeListRef.child(currentRecipeKey);
+
+      snapshot.forEach(function(childSnapshot) {
+      var childNode = childSnapshot.val();
+      var recipeID = childNode.recipeID;
+      var childKey = childSnapshot.key;
+
+      if (recipeID === currentRecipeKey) {
+        console.log("removed");
+        console.log(childSnapshot.key);
+        userIngredientsRef.child(childKey).remove();
+       };
+      });
+
+      currentRecipe.remove();
+
+      App.toggleToForm();
+    },
+
+    //fix dis
+
+
+    renderList: function(returnArr) {
 
     $(".saved-recipes li").remove();
         var savedRecipes = returnArr;
