@@ -15250,7 +15250,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
         q: ingredient
       });
       request.done(App.formatResponse);
-      request.done(App.renderRecipe);
+      //request.done(App.renderRecipe);
     },
 
     requestRecipe: function requestRecipe(extraParameters) {
@@ -15267,10 +15267,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
     },
 
     formatResponse: function formatResponse(response) {
+
+      //console.log("in");
+
+
       App.recipeArray = [];
       _lodash2.default.each(response.hits, function (child) {
         var recipeObject = {
-          //  recipe: child.recipe,
           calories: child.recipe.calories,
           image: child.recipe.image,
           ingredients: child.recipe.ingredientLines,
@@ -15281,6 +15284,45 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
         };
         App.recipeArray.push(recipeObject);
       });
+
+      //firebase snapshot
+
+      userIngredientsRef.on('value', function (snapshot) {
+
+        var ingredientSearch = (0, _jquery2.default)(".ingredient-input").val();
+
+        var returnArr = [];
+
+        snapshot.forEach(function (childSnapshot) {
+          var childVal = childSnapshot.val();
+          var ingredient = childVal.ingredient;
+          var ingredientRecipeID = childVal.recipeID;
+
+          if (ingredient == ingredientSearch) {
+
+            recipeListRef.on('value', function (snapshot) {
+
+              snapshot.forEach(function (childSnapshot) {
+
+                var childData = childSnapshot.val();
+                var childIngredients = childSnapshot.child("ingredients").val();
+
+                if (childIngredients.includes(ingredient)) {
+
+                  //console.log(childIngredients);
+                  //console.log(childSnapshot.val());
+
+                  var recipePush = childSnapshot.val();
+                  App.recipeArray.push(recipePush);
+                  console.log(App.recipeArray);
+                };
+              });
+            });
+          }
+        });
+      });
+
+      App.renderRecipe();
     },
 
     toggleToForm: function toggleToForm() {
@@ -15331,15 +15373,32 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
       (0, _jquery2.default)(".recipe-detail").remove();
     },
 
-    renderRecipe: function renderRecipe(response) {
+    //Fix This
+
+    renderRecipe: function renderRecipe() {
       (0, _jquery2.default)(".recipes li").remove();
       var recipes = App.recipeArray;
       recipes.map(function (x) {
-        var recipe_name = x.title;
-        var recipesMarkup = '<li>' + recipe_name + '</li>';
-        (0, _jquery2.default)(".recipes").append(recipesMarkup);
+
+        //console.log("test");
+        //console.log(x.recipe.userCreated);
+
+        if (x.userCreated == false) {
+          //  console.log(x);
+          var recipe_name = x.title;
+          var recipesMarkup = '<li>' + recipe_name + '</li>';
+          (0, _jquery2.default)(".recipes").append(recipesMarkup);
+        } else {
+
+          console.log("in here");
+          var recipe_name = x.name;
+          var recipesMarkup = '<li>' + recipe_name + '</li>';
+          (0, _jquery2.default)(".recipes").append(recipesMarkup);
+        }
       });
     },
+
+    //Fix Dis
 
     showRecipeDetails: function showRecipeDetails() {
 
@@ -15350,13 +15409,31 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
       var recipe = _lodash2.default.find(App.recipeArray, {
         title: recipe_name
       });
-      var ingredients = recipe.ingredients;
-      var ingredientForm = _jquery2.default.each(ingredients, function (x) {
-        (0, _jquery2.default)(".recipe-detail ul").append('<li>' + this + '</li>');
-      });
-      (0, _jquery2.default)("#recipe-image").attr('src', recipe.image);
-      (0, _jquery2.default)(".instructions").append('<a href="' + recipe.instructionsLink + '" target="_blank">For more information follow this link to the full recipe at ' + recipe.recipeSource + '</a>');
-      (0, _jquery2.default)(".title").append('<p>' + recipe.title + '</p>');
+
+      console.log(App.recipeArray);
+
+      if (recipe.userCreated == false) {
+        console.log("not userCreated");
+
+        var ingredients = recipe.ingredients;
+        var ingredientForm = _jquery2.default.each(ingredients, function (x) {
+          (0, _jquery2.default)(".recipe-detail ul").append('<li>' + this + '</li>');
+        });
+        (0, _jquery2.default)("#recipe-image").attr('src', recipe.image);
+        (0, _jquery2.default)(".instructions").append('<a href="' + recipe.instructionsLink + '" target="_blank">For more information follow this link to the full recipe at ' + recipe.recipeSource + '</a>');
+        (0, _jquery2.default)(".title").append('<p>' + recipe.title + '</p>');
+      } else {
+
+        console.log("user created");
+
+        var _ingredients = recipe.ingredients;
+        var _ingredientForm = _jquery2.default.each(_ingredients, function (x) {
+          (0, _jquery2.default)(".recipe-detail ul").append('<li>' + this + '</li>');
+        });
+        //$("#recipe-image").attr('src', recipe.image);
+        (0, _jquery2.default)(".instructions").append('<li>' + recipe.instructions + '</li>');
+        (0, _jquery2.default)(".title").append('<p>' + recipe.name + '</p>');
+      };
     },
 
     showSavedRecipeDetails: function showSavedRecipeDetails() {
@@ -15366,9 +15443,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
       var recipe_name = (0, _jquery2.default)(this).text();
       var recipe_id = (0, _jquery2.default)(this).attr('id');
 
-      //firebase
+      console.log(recipe_name);
+      console.log(recipe_id);
 
-      //firebase.database().ref('/recipeList').on('value', function(snapshot) {
+      //firebase
 
       recipeListRef.on('value', function (snapshot) {
 
@@ -15385,29 +15463,35 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
           key: recipe_id
         });
 
+        console.log(recipe);
+
         currentRecipeKey = recipe.key;
 
         //console.log(recipe.recipe.userCreated);
 
-        if (recipe.recipe.userCreated == false) {
+        if (recipe.userCreated == false) {
 
-          var ingredients = recipe.recipe.ingredients;
+          console.log("false");
+
+          var ingredients = recipe.ingredients;
           var ingredientForm = _jquery2.default.each(ingredients, function (x) {
             (0, _jquery2.default)(".recipe-detail ul").append('<li>' + this + '</li>');
           });
-          (0, _jquery2.default)("#recipe-image").attr('src', recipe.recipe.image);
-          (0, _jquery2.default)(".instructions").append('<a href="' + recipe.recipe.instructionsLink + '" target="_blank">For more information follow this link to the full recipe at ' + recipe.recipe.recipeSource + '</a>');
-          (0, _jquery2.default)(".title").append('<p>' + recipe.recipe.title + '</p>');
-          (0, _jquery2.default)(".instructions-text").append('<p>' + recipe.recipe.instructions);
+          (0, _jquery2.default)("#recipe-image").attr('src', recipe.image);
+          (0, _jquery2.default)(".instructions").append('<a href="' + recipe.instructionsLink + '" target="_blank">For more information follow this link to the full recipe at ' + recipe.recipeSource + '</a>');
+          (0, _jquery2.default)(".title").append('<p>' + recipe.title + '</p>');
+          (0, _jquery2.default)(".instructions-text").append('<p>' + recipe.instructions);
         } else {
 
-          var _ingredients = recipe.recipe.ingredients;
-          var _ingredientForm = _jquery2.default.each(_ingredients, function (x) {
+          console.log("true");
+
+          var _ingredients2 = recipe.ingredients;
+          var _ingredientForm2 = _jquery2.default.each(_ingredients2, function (x) {
             (0, _jquery2.default)(".recipe-detail ul").append('<li>' + this + '</li>');
           });
-          (0, _jquery2.default)("#recipe-image").attr('src', recipe.recipe.image);
-          (0, _jquery2.default)(".title").append('<p>' + recipe.recipe.title + '</p>');
-          (0, _jquery2.default)(".instructions").append('<p>' + recipe.recipe.instructions);
+          //$("#recipe-image").attr('src', recipe.recipe.image);
+          (0, _jquery2.default)(".title").append('<p>' + recipe.title + '</p>');
+          (0, _jquery2.default)(".instructions").append('<p>' + recipe.instructions);
         };
 
         //console.log(recipe);
@@ -15423,6 +15507,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
       if (typeof recipe === 'undefined') {
 
+        //  console.log("in");
+
         var recTitle = (0, _jquery2.default)(".recipe-title").val();
         var ingredientsArr = [];
 
@@ -15432,13 +15518,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
         var data = {
           name: recTitle,
-          recipe: {
-            title: (0, _jquery2.default)(".recipe-title").val(),
-            ingredients: ingredientsArr,
-            instructions: (0, _jquery2.default)(".instructions").val(),
-            recipeSource: userId,
-            userCreated: true
-          },
+
+          title: recTitle,
+          ingredients: ingredientsArr,
+          instructions: (0, _jquery2.default)(".instructions").val(),
+          recipeSource: userId,
+          userCreated: true,
+
           userWhoSaved: userId
         };
 
@@ -15462,10 +15548,24 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
         //firebase//
 
+        // var data = {
+        //   name: recipe_name,
+        //   recipe: recipe,
+        //   userWhoSaved: userId
+        // }
+
+
         var data = {
           name: _recipe_name,
-          recipe: _recipe,
-          userWhoSaved: userId
+          title: _recipe_name,
+          ingredients: _recipe.ingredients,
+          instructions: "NA",
+          instructionsLink: _recipe.instructionsLink,
+          recipeSource: _recipe.recipeSource,
+          userCreated: false,
+          userWhoSaved: userId,
+          image: _recipe.image
+
         };
 
         var newRef = recipeListRef.push(data);
@@ -15477,7 +15577,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
     removeRecipeFromList: function removeRecipeFromList() {
 
-      userIngredientsRef.on('value', function (snapshot) {
+      //console.log("first funct");
+
+      userIngredientsRef.once('value', function (snapshot) {
         App.snapshotToArrayIngredients(snapshot);
       });
     },
@@ -15513,18 +15615,27 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
       var currentRecipe = recipeListRef.child(currentRecipeKey);
 
       snapshot.forEach(function (childSnapshot) {
+
         var childNode = childSnapshot.val();
         var recipeID = childNode.recipeID;
         var childKey = childSnapshot.key;
 
         if (recipeID === currentRecipeKey) {
-          console.log("removed");
-          console.log(childSnapshot.key);
+          //console.log("second funct inside delete");
+          // console.log("removed");
+          //console.log(currentRecipeKey);
+          //console.log (recipeID);
+          console.log(userIngredientsRef.child(childKey));
+
           userIngredientsRef.child(childKey).remove();
         };
       });
 
-      currentRecipe.remove();
+      console.log("outside");
+
+      recipeListRef.child(currentRecipeKey).remove();
+
+      currentRecipeKey = 0;
 
       App.toggleToForm();
     },

@@ -229,7 +229,7 @@ $(document).ready(function() {
         q: ingredient
       });
       request.done(App.formatResponse);
-      request.done(App.renderRecipe);
+      //request.done(App.renderRecipe);
     },
 
     requestRecipe: function(extraParameters) {
@@ -246,10 +246,17 @@ $(document).ready(function() {
     },
 
     formatResponse: function(response) {
+
+      //console.log("in");
+
+
+
+
+
+
       App.recipeArray = [];
       _.each(response.hits, function(child) {
         const recipeObject = {
-        //  recipe: child.recipe,
           calories: child.recipe.calories,
           image: child.recipe.image,
           ingredients: child.recipe.ingredientLines,
@@ -260,7 +267,52 @@ $(document).ready(function() {
         };
         App.recipeArray.push(recipeObject);
       });
-    },
+
+      //firebase snapshot
+
+      userIngredientsRef.on('value', function(snapshot) {
+
+      const ingredientSearch = $(".ingredient-input").val();
+
+      var returnArr = [];
+
+      snapshot.forEach(function(childSnapshot) {
+      var childVal = childSnapshot.val();
+      var ingredient = childVal.ingredient;
+      var ingredientRecipeID = childVal.recipeID;
+
+
+      if (ingredient == ingredientSearch) {
+
+        recipeListRef.on('value', function(snapshot) {
+
+          snapshot.forEach(function(childSnapshot){
+
+            var childData = childSnapshot.val();
+            var childIngredients = childSnapshot.child("ingredients").val();
+
+            if (childIngredients.includes(ingredient)){
+
+              //console.log(childIngredients);
+              //console.log(childSnapshot.val());
+
+              const recipePush = childSnapshot.val();
+              App.recipeArray.push(recipePush);
+              console.log(App.recipeArray);
+
+            };
+
+          });
+
+        });
+      }
+
+      });
+  });
+
+  App.renderRecipe();
+
+  },
 
     toggleToForm: function() {
 
@@ -316,16 +368,36 @@ $(document).ready(function() {
 
     },
 
-    renderRecipe: function(response) {
+
+
+    //Fix This
+
+    renderRecipe: function() {
       $(".recipes li").remove();
       var recipes = App.recipeArray;
       recipes.map(function(x) {
-        var recipe_name = x.title;
-        var recipesMarkup = `<li>${recipe_name}</li>`;
-        $(".recipes").append(recipesMarkup);
+
+        //console.log("test");
+        //console.log(x.recipe.userCreated);
+
+        if(x.userCreated == false ){
+        //  console.log(x);
+          var recipe_name = x.title;
+          var recipesMarkup = `<li>${recipe_name}</li>`;
+          $(".recipes").append(recipesMarkup);
+        } else {
+
+          console.log("in here");
+          var recipe_name = x.name;
+          var recipesMarkup = `<li>${recipe_name}</li>`;
+          $(".recipes").append(recipesMarkup);
+      }
       });
 
     },
+
+
+    //Fix Dis
 
     showRecipeDetails: function() {
 
@@ -336,6 +408,12 @@ $(document).ready(function() {
       const recipe = _.find(App.recipeArray, {
         title: recipe_name
       });
+
+      console.log(App.recipeArray);
+
+      if(recipe.userCreated == false){
+        console.log("not userCreated");
+
       const ingredients = (recipe.ingredients);
       const ingredientForm = $.each(ingredients, function(x) {
         $(".recipe-detail ul").append(`<li>${this}</li>`);
@@ -345,6 +423,26 @@ $(document).ready(function() {
         `<a href="${recipe.instructionsLink}" target="_blank">For more information follow this link to the full recipe at ${recipe.recipeSource}</a>`
       );
       $(".title").append(`<p>${recipe.title}</p>`);
+
+    } else {
+
+      console.log("user created");
+
+      const ingredients = (recipe.ingredients);
+      const ingredientForm = $.each(ingredients, function(x) {
+        $(".recipe-detail ul").append(`<li>${this}</li>`);
+      });
+      //$("#recipe-image").attr('src', recipe.image);
+      $(".instructions").append(
+        (`<li>${recipe.instructions}</li>`)
+      );
+      $(".title").append(`<p>${recipe.name}</p>`);
+
+
+
+    };
+
+
     },
 
     showSavedRecipeDetails: function() {
@@ -354,9 +452,10 @@ $(document).ready(function() {
       const recipe_name = $(this).text();
       var recipe_id = $(this).attr('id');
 
-      //firebase
+      console.log(recipe_name);
+      console.log(recipe_id);
 
-      //firebase.database().ref('/recipeList').on('value', function(snapshot) {
+      //firebase
 
         recipeListRef.on('value', function(snapshot) {
 
@@ -373,32 +472,38 @@ $(document).ready(function() {
           key: recipe_id
         });
 
+        console.log(recipe);
+
         currentRecipeKey = recipe.key;
 
         //console.log(recipe.recipe.userCreated);
 
-        if(recipe.recipe.userCreated == false){
+        if(recipe.userCreated == false){
 
-        const ingredients = (recipe.recipe.ingredients);
+          console.log("false");
+
+        const ingredients = (recipe.ingredients);
         const ingredientForm = $.each(ingredients, function(x) {
           $(".recipe-detail ul").append(`<li>${this}</li>`);
         });
-        $("#recipe-image").attr('src', recipe.recipe.image);
+        $("#recipe-image").attr('src', recipe.image);
         $(".instructions").append(
-          `<a href="${recipe.recipe.instructionsLink}" target="_blank">For more information follow this link to the full recipe at ${recipe.recipe.recipeSource}</a>`
+          `<a href="${recipe.instructionsLink}" target="_blank">For more information follow this link to the full recipe at ${recipe.recipeSource}</a>`
         );
-        $(".title").append(`<p>${recipe.recipe.title}</p>`);
-        $(".instructions-text").append(`<p>${recipe.recipe.instructions}`);
+        $(".title").append(`<p>${recipe.title}</p>`);
+        $(".instructions-text").append(`<p>${recipe.instructions}`);
 
       } else {
 
-        const ingredients = (recipe.recipe.ingredients);
+        console.log("true");
+
+        const ingredients = (recipe.ingredients);
         const ingredientForm = $.each(ingredients, function(x) {
           $(".recipe-detail ul").append(`<li>${this}</li>`);
         });
-        $("#recipe-image").attr('src', recipe.recipe.image);
-        $(".title").append(`<p>${recipe.recipe.title}</p>`);
-        $(".instructions").append(`<p>${recipe.recipe.instructions}`);
+        //$("#recipe-image").attr('src', recipe.recipe.image);
+        $(".title").append(`<p>${recipe.title}</p>`);
+        $(".instructions").append(`<p>${recipe.instructions}`);
 
       };
 
@@ -418,6 +523,8 @@ $(document).ready(function() {
 
       if (typeof recipe === 'undefined'){
 
+      //  console.log("in");
+
         var recTitle = $(".recipe-title").val();
         var ingredientsArr = [];
 
@@ -428,14 +535,14 @@ $(document).ready(function() {
 
           var data = {
             name: recTitle,
-          recipe: {
-            title: $(".recipe-title").val(),
+
+            title: recTitle,
             ingredients: ingredientsArr,
             instructions: $(".instructions").val(),
             recipeSource: userId,
-            userCreated: true
-          },
-          userWhoSaved: userId
+            userCreated: true,
+
+            userWhoSaved: userId
         }
 
          var newRef = recipeListRef.push(data);
@@ -462,11 +569,25 @@ $(document).ready(function() {
 
       //firebase//
 
+      // var data = {
+      //   name: recipe_name,
+      //   recipe: recipe,
+      //   userWhoSaved: userId
+      // }
+
+
       var data = {
         name: recipe_name,
-        recipe: recipe,
-        userWhoSaved: userId
-      }
+        title: recipe_name,
+        ingredients: recipe.ingredients,
+        instructions: "NA",
+        instructionsLink: recipe.instructionsLink,
+        recipeSource: recipe.recipeSource,
+        userCreated: false,
+        userWhoSaved: userId,
+        image: recipe.image
+
+    }
 
         var newRef = recipeListRef.push(data);
         var newID = newRef.key;
@@ -477,7 +598,9 @@ $(document).ready(function() {
 
      removeRecipeFromList: function() {
 
-       userIngredientsRef.on('value', function(snapshot) {
+       //console.log("first funct");
+
+       userIngredientsRef.once('value', function(snapshot) {
          App.snapshotToArrayIngredients(snapshot);
        });
     },
@@ -515,18 +638,29 @@ $(document).ready(function() {
       const currentRecipe = recipeListRef.child(currentRecipeKey);
 
       snapshot.forEach(function(childSnapshot) {
+
       var childNode = childSnapshot.val();
       var recipeID = childNode.recipeID;
       var childKey = childSnapshot.key;
 
+
+
       if (recipeID === currentRecipeKey) {
-        console.log("removed");
-        console.log(childSnapshot.key);
+        //console.log("second funct inside delete");
+        // console.log("removed");
+        //console.log(currentRecipeKey);
+        //console.log (recipeID);
+        console.log(userIngredientsRef.child(childKey));
+
         userIngredientsRef.child(childKey).remove();
        };
       });
 
-      currentRecipe.remove();
+      console.log("outside");
+
+      recipeListRef.child(currentRecipeKey).remove();
+
+      currentRecipeKey = 0;
 
       App.toggleToForm();
     },
